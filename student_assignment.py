@@ -61,8 +61,8 @@ def generate_hw01():
 
         print(metadata)
         metadatas.append(metadata)
-        print(f"record_{index}")
-        ids.append(f"record_{index}")
+        print(str(index))
+        ids.append(str(index))
 
     collection.add(
         documents=documents,
