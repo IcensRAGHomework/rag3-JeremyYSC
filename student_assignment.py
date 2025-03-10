@@ -30,6 +30,9 @@ def generate_hw01():
         embedding_function=openai_ef
     )
 
+    if collection.count() != 0:
+        return collection
+
     csv_file = "COA_OpenData.csv"
     df = pd.read_csv(csv_file)
 
