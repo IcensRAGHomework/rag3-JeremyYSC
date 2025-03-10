@@ -33,7 +33,6 @@ def generate_hw01():
     csv_file = "COA_OpenData.csv"
     df = pd.read_csv(csv_file)
 
-    documents = []
     metadatas = []
     ids = []
 
@@ -41,10 +40,9 @@ def generate_hw01():
     town_pattern = re.compile(r"^(.*?[市縣].*?[區鄉市])")
     town_pattern2 = re.compile(r"^(.*?[市縣].*?[鎮])")
 
-    for index, row in df.iterrows():
-        host_words = row["HostWords"]
-        documents.append(host_words)
+    documents = df["HostWords"].tolist()
 
+    for index, row in df.iterrows():
         create_date = row["CreateDate"]
 
         try:
