@@ -37,6 +37,10 @@ def generate_hw01():
     metadatas = []
     ids = []
 
+    city_pattern = re.compile(r"^(.*?[市縣])")
+    town_pattern = re.compile(r"^(.*?[市縣].*?[區鄉市])")
+    town_pattern2 = re.compile(r"^(.*?[市縣].*?[鎮])")
+
     for index, row in df.iterrows():
         host_words = str(row.get("HostWords", ""))
         documents.append(host_words)
@@ -49,18 +53,18 @@ def generate_hw01():
         except (ValueError, TypeError):
             timestamp = 0
 
-        city_csv = str(row.get("City", ""))
-        town_csv = str(row.get("Town", ""))
+        # city_csv = str(row.get("City", ""))
+        # town_csv = str(row.get("Town", ""))
         address = str(row.get("Address", ""))
-        city, town = parse_city_town(address)
-
-        if city_csv != city:
-            print(city_csv)
-            print(city)
-
-        if town_csv != town:
-            print(town_csv)
-            print(town)
+        # city, town = parse_city_town(address)
+        #
+        # if city_csv != city:
+        #     print("city_csv: " + city_csv)
+        #     print("city: " + city)
+        #
+        # if town_csv != town:
+        #     print("town_csv: " + town_csv)
+        #     print("town: " + town)
 
         # if not is_valid_city(city) or not is_valid_town(town):
         #     print(city)
@@ -68,6 +72,18 @@ def generate_hw01():
         #     city_from_address, town_from_address = parse_city_town(address)
         #     city = city_from_address if not is_valid_city(city) else city
         #     town = town_from_address if not is_valid_town(town) else town
+
+        city = re.match(city_pattern, row["Address"]).group()
+
+        if re.match(town_pattern, row["Address"]) is not None:
+            town = re.match(town_pattern, row["Address"]).group().split(city)[1]
+        elif re.match(town_pattern2, row["Address"]) is not None:
+            town = re.match(town_pattern2, row["Address"]).group().split(city)[1]
+        else:
+            town = city
+            city = city.replace("市", "縣")
+            print(town)
+            print(city)
 
         metadata = {
             "file_name": csv_file,
