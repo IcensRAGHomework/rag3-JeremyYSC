@@ -100,9 +100,9 @@ def generate_hw01():
         ids.append(str(index))
 
     collection.add(
+        ids=ids,
         documents=documents,
         metadatas=metadatas,
-        ids=ids
     )
 
     return collection
