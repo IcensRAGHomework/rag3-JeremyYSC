@@ -45,18 +45,29 @@ def generate_hw01():
 
         try:
             timestamp = int(datetime.strptime(create_date, "%Y-%m-%d").timestamp())
-            print(timestamp)
+            # print(timestamp)
         except (ValueError, TypeError):
             timestamp = 0
 
-        city = str(row.get("City", ""))
-        town = str(row.get("Town", ""))
+        city_csv = str(row.get("City", ""))
+        town_csv = str(row.get("Town", ""))
         address = str(row.get("Address", ""))
+        city, town = parse_city_town(address)
 
-        if not is_valid_city(city) or not is_valid_town(town):
-            city_from_address, town_from_address = parse_city_town(address)
-            city = city_from_address if not is_valid_city(city) else city
-            town = town_from_address if not is_valid_town(town) else town
+        if city_csv != city:
+            print(city_csv)
+            print(city)
+
+        if town_csv != town:
+            print(town_csv)
+            print(town)
+
+        # if not is_valid_city(city) or not is_valid_town(town):
+        #     print(city)
+        #     print(town)
+        #     city_from_address, town_from_address = parse_city_town(address)
+        #     city = city_from_address if not is_valid_city(city) else city
+        #     town = town_from_address if not is_valid_town(town) else town
 
         metadata = {
             "file_name": csv_file,
@@ -69,7 +80,7 @@ def generate_hw01():
             "date": timestamp
         }
 
-        print(metadata)
+        # print(metadata)
         metadatas.append(metadata)
         print(str(index))
         ids.append(str(index))
