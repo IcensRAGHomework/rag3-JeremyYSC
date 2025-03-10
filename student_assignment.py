@@ -42,10 +42,10 @@ def generate_hw01():
     town_pattern2 = re.compile(r"^(.*?[市縣].*?[鎮])")
 
     for index, row in df.iterrows():
-        host_words = str(row.get("HostWords", ""))
+        host_words = row["HostWords"]
         documents.append(host_words)
 
-        create_date = row.get("CreateDate", "")
+        create_date = row["CreateDate"]
 
         try:
             timestamp = int(datetime.strptime(create_date, "%Y-%m-%d").timestamp())
@@ -55,7 +55,7 @@ def generate_hw01():
 
         # city_csv = str(row.get("City", ""))
         # town_csv = str(row.get("Town", ""))
-        address = str(row.get("Address", ""))
+        address = row["Address"]
         # city, town = parse_city_town(address)
         #
         # if city_csv != city:
@@ -87,10 +87,10 @@ def generate_hw01():
 
         metadata = {
             "file_name": csv_file,
-            "name": str(row.get("Name", "")),
-            "type": str(row.get("Type", "")),
+            "name": row["Name"],
+            "type": row["Type"],
             "address": address,
-            "tel": str(row.get("Tel", "")),
+            "tel": row["Tel"],
             "city": city,
             "town": town,
             "date": timestamp
