@@ -45,11 +45,11 @@ def generate_hw01():
     for index, row in df.iterrows():
         create_date = row["CreateDate"]
 
-        try:
-            timestamp = int(datetime.strptime(create_date, "%Y-%m-%d").timestamp())
+        # try:
+        timestamp = int(datetime.strptime(create_date, "%Y-%m-%d").timestamp())
             # print(timestamp)
-        except (ValueError, TypeError):
-            timestamp = 0
+        # except (ValueError, TypeError):
+        #     timestamp = 0
 
         # city_csv = str(row.get("City", ""))
         # town_csv = str(row.get("Town", ""))
