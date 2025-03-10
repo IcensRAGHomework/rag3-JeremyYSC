@@ -1,7 +1,7 @@
 import chromadb
 import pandas as pd
-import traceback
 import re
+import traceback
 
 from chromadb.utils import embedding_functions
 from datetime import datetime
@@ -15,66 +15,71 @@ dbpath = "./"
 
 def generate_hw01():
     chroma_client = chromadb.PersistentClient(path=dbpath)
+
     openai_ef = embedding_functions.OpenAIEmbeddingFunction(
         api_key=gpt_emb_config['api_key'],
-        api_type=gpt_emb_config['openai_type'],
         api_base=gpt_emb_config['api_base'],
+        api_type=gpt_emb_config['openai_type'],
         api_version=gpt_emb_config['api_version'],
         deployment_id=gpt_emb_config['deployment_name']
     )
+
     collection = chroma_client.get_or_create_collection(
         name="TRAVEL",
         metadata={"hnsw:space": "cosine"},
         embedding_function=openai_ef
     )
 
-    if collection.count() != 0:
-        return collection
-    # 讀取 CSV 檔案
-    df = pd.read_csv("COA_OpenData.csv")
-    required_columns = {"ID", "Name", "Type", "Address", "Tel", "CreateDate", "HostWords"}
-    if not required_columns.issubset(df.columns):
-        raise ValueError("CSV 缺少必要欄位！請確認 CSV 欄位名稱是否正確。")
-    city_pattern = re.compile(r"^(.*?[市縣])")
-    town_pattern = re.compile(r"^(.*?[市縣].*?[區鄉市])")
-    town_pattern2 = re.compile(r"^(.*?[市縣].*?[鎮])")
-    documents = df["HostWords"].tolist()
-    metadata_list = []
-    ids = []
-    for index, row in df.iterrows():
-        # try:
-        create_timestamp = int(datetime.strptime(row["CreateDate"], "%Y-%m-%d").timestamp())
-        # except:
-        #     create_timestamp = int(time.time())  # 若日期轉換失敗，則使用當前時間
-        city_str = re.match(city_pattern, row["Address"]).group()
+    csv_file = "COA_OpenData.csv"
+    df = pd.read_csv(csv_file)
 
-        if re.match(town_pattern, row["Address"]) is not None:
-            town_str = re.match(town_pattern, row["Address"]).group().split(city_str)[1]
-        elif re.match(town_pattern2, row["Address"]) is not None:
-            town_str = re.match(town_pattern2, row["Address"]).group().split(city_str)[1]
-        else:
-            town_str = city_str
-            city_str = city_str.replace("市", "縣")
+    documents = []
+    metadatas = []
+    ids = []
+
+    for index, row in df.iterrows():
+        host_words = str(row.get("HostWords", ""))
+        documents.append(host_words)
+
+        create_date = row.get("CreateDate", "")
+
+        try:
+            timestamp = int(datetime.strptime(create_date, "%Y-%m-%d").timestamp())
+            print(timestamp)
+        except (ValueError, TypeError):
+            timestamp = 0
+
+        city = str(row.get("City", ""))
+        town = str(row.get("Town", ""))
+        address = str(row.get("Address", ""))
+
+        if not is_valid_city(city) or not is_valid_town(town):
+            city_from_address, town_from_address = parse_city_town(address)
+            city = city_from_address if not is_valid_city(city) else city
+            town = town_from_address if not is_valid_town(town) else town
 
         metadata = {
-            "file_name": "COA_OpenData.csv",
-            "name": row["Name"],
-            "type": row["Type"],
-            "address": row["Address"],
-            "tel": row["Tel"],
-            "city": city_str,
-            "town": town_str,
-            "date": create_timestamp
+            "file_name": csv_file,
+            "name": str(row.get("Name", "")),
+            "type": str(row.get("Type", "")),
+            "address": address,
+            "tel": str(row.get("Tel", "")),
+            "city": city,
+            "town": town,
+            "date": timestamp
         }
 
-        metadata_list.append(metadata)
-        ids.append(str(index))  # 以 index 作為 ID
-    # 將數據存入 ChromaDB
+        print(metadata)
+        metadatas.append(metadata)
+        print(str(index))
+        ids.append(str(index))
+
     collection.add(
-        ids=ids,
         documents=documents,
-        metadatas=metadata_list
+        metadatas=metadatas,
+        ids=ids
     )
+
     return collection
 
 
@@ -103,6 +108,32 @@ def demo(question):
 
     print(collection)
     return collection
+
+
+def is_valid_city(city):
+    return bool(city and isinstance(city, str) and ("縣" in city or "市" in city))
+
+
+def is_valid_town(town):
+    return bool(town and isinstance(town, str) and any(x in town for x in ["鄉", "鎮", "區", "市"]))
+
+
+def parse_city_town(address):
+    if not address or pd.isna(address):
+        return "", ""
+
+    first_address = address.split('/')[0].strip()
+
+    city_pattern = r"([^縣市]+[縣市])"
+    town_pattern = r"[縣市]([^鄉鎮區市]+[鄉鎮區市])"
+
+    city_match = re.search(city_pattern, first_address)
+    town_match = re.search(town_pattern, first_address)
+
+    city = city_match.group(0) if city_match else ""
+    town = town_match.group(1) if town_match else ""
+
+    return city, town
 
 
 def main():
