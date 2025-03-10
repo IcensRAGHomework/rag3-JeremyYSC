@@ -43,10 +43,8 @@ def generate_hw01():
     documents = df["HostWords"].tolist()
 
     for index, row in df.iterrows():
-        create_date = row["CreateDate"]
-
         # try:
-        timestamp = int(datetime.strptime(create_date, "%Y-%m-%d").timestamp())
+        timestamp = int(datetime.strptime(row["CreateDate"], "%Y-%m-%d").timestamp())
             # print(timestamp)
         # except (ValueError, TypeError):
         #     timestamp = 0
