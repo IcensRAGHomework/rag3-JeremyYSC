@@ -53,7 +53,7 @@ def generate_hw01():
 
         # city_csv = str(row.get("City", ""))
         # town_csv = str(row.get("Town", ""))
-        address = row["Address"]
+        # address = row["Address"]
         # city, town = parse_city_town(address)
         #
         # if city_csv != city:
@@ -87,7 +87,7 @@ def generate_hw01():
             "file_name": csv_file,
             "name": row["Name"],
             "type": row["Type"],
-            "address": address,
+            "address": row["Address"],
             "tel": row["Tel"],
             "city": city,
             "town": town,
