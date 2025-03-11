@@ -148,7 +148,66 @@ def generate_hw02(question, city, store_type, start_date, end_date):
 
 
 def generate_hw03(question, store_name, new_store_name, city, store_type):
-    pass
+    # 初始化 ChromaDB 客戶端並獲取 Collection
+    client = chromadb.PersistentClient(path="./")
+
+    openai_ef = embedding_functions.OpenAIEmbeddingFunction(
+        api_key=gpt_emb_config['api_key'],
+        api_type=gpt_emb_config['openai_type'],
+        api_base=gpt_emb_config['api_base'],
+        api_version=gpt_emb_config['api_version'],
+        deployment_id=gpt_emb_config['deployment_name']
+    )
+
+    collection = client.get_or_create_collection(
+        name="TRAVEL",
+        embedding_function=openai_ef
+    )
+
+    # 第一步：更新指定店家的 new_store_name
+    # 查找匹配 store_name 的記錄
+    existing_data = collection.get(where={"name": store_name}, include=["metadatas"])
+
+    if existing_data["ids"]:  # 如果找到匹配的店家
+        for idx in existing_data["ids"]:
+            metadata = collection.get(ids=[idx], include=["metadatas"])["metadatas"][0]
+            # 更新元數據，添加 new_store_name
+            metadata["new_store_name"] = new_store_name
+            collection.update(
+                ids=[idx],
+                metadatas=[metadata]
+            )
+
+    # 第二步：根據查詢條件查詢店家
+    where_conditions = []
+    if city and isinstance(city, list) and city:
+        where_conditions.append({"city": {"$in": city}})
+    if store_type and isinstance(store_type, list) and store_type:
+        where_conditions.append({"type": {"$in": store_type}})
+
+    where = {"$and": where_conditions} if where_conditions else None
+
+    results = collection.query(
+        query_texts=[question],
+        n_results=10,  # 返回最多 10 個結果
+        where=where,
+        include=["metadatas", "distances"]
+    )
+
+    # 處理查詢結果
+    store_names = []
+    for metadata, distance in zip(results["metadatas"][0], results["distances"][0]):
+        similarity = 1 - distance
+        if similarity >= 0.80:  # 只保留相似度 >= 0.80 的結果
+            # 若有 new_store_name，則使用它；否則使用原始 name
+            display_name = metadata.get("new_store_name", metadata["name"])
+            store_names.append((display_name, similarity))
+
+    # 按相似度分數遞減排序
+    store_names.sort(key=lambda x: x[1], reverse=True)
+
+    # 返回僅店家名稱的列表
+    return [name for name, _ in store_names]
 
 
 def demo(question):
@@ -174,12 +233,19 @@ def main():
     # demo(None)
     # generate_hw01()
 
-    question = "我想要找有關茶餐點的店家"
-    city = ["宜蘭縣", "新北市"]
+    # question = "我想要找有關茶餐點的店家"
+    # city = ["宜蘭縣", "新北市"]
+    # store_type = ["美食"]
+    # start_date = datetime(2024, 4, 1)
+    # end_date = datetime(2024, 5, 1)
+    # print(generate_hw02(question, city, store_type, start_date, end_date))
+
+    question = "我想要找南投縣的田媽媽餐廳，招牌是蕎麥麵"
+    store_name = "耄饕客棧"
+    new_store_name = "田媽媽（耄饕客棧）"
+    city = ["南投縣"]
     store_type = ["美食"]
-    start_date = datetime(2024, 4, 1)
-    end_date = datetime(2024, 5, 1)
-    print(generate_hw02(question, city, store_type, start_date, end_date))
+    print(generate_hw03(question, store_name, new_store_name, city, store_type))
 
 
 if __name__ == '__main__':
